@@ -1,0 +1,493 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "adminPassword": {
+            "metadata": {
+                "description": "Password for the Virtual Machine."
+            },
+            "type": "securestring"
+        },
+        "adminUsername": {
+            "metadata": {
+                "description": "Username for the Virtual Machine."
+            },
+            "type": "string"
+        },
+        "dnsLabelPrefix": {
+            "metadata": {
+                "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+            },
+            "type": "string"
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "location": "[variables('location')]",
+            "name": "[variables('virtualNetworkName')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetPrefix')]"
+                        }
+                    }
+                ]
+            },
+            "type": "Microsoft.Network/virtualNetworks"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "location": "[variables('location')]",
+            "name": "[variables('publicIPAddressName')]",
+            "properties": {
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('dnsLabelPrefix')]"
+                },
+                "publicIPAllocationMethod": "[variables('publicIPAddressType')]"
+            },
+            "type": "Microsoft.Network/publicIPAddresses"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "location": "[variables('location')]",
+            "name": "[variables('networkSecurityGroupName')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "SSH",
+                        "properties": {
+                            "access": "Allow",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "22",
+                            "direction": "Inbound",
+                            "priority": 1020,
+                            "protocol": "*",
+                            "sourceAddressPrefix": "*",
+                            "sourcePortRange": "*"
+                        }
+                    },
+                    {
+                        "name": "HTTPS",
+                        "properties": {
+                            "access": "Allow",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "443",
+                            "direction": "Inbound",
+                            "priority": 1040,
+                            "protocol": "*",
+                            "sourceAddressPrefix": "*",
+                            "sourcePortRange": "*"
+                        }
+                    }
+                ]
+            },
+            "type": "Microsoft.Network/networkSecurityGroups"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "location": "[variables('location')]",
+            "name": "[concat(uniqueString(resourceGroup().id), 'sacjumpbox')]",
+            "properties": {
+                "accountType": "[variables('storageAccountType')]"
+            },
+            "type": "Microsoft.Storage/storageAccounts"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/',variables('publicIPAddressName'))]",
+                "[concat('Microsoft.Network/networkSecurityGroups/',variables('networkSecurityGroupName'))]",
+                "[concat('Microsoft.Network/virtualNetworks/',variables('virtualNetworkName'))]"
+            ],
+            "location": "[variables('location')]",
+            "name": "nicjumpbox",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+                            },
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('networkSecurityGroupName'))]"
+                }
+            },
+            "type": "Microsoft.Network/networkInterfaces"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/',concat(uniqueString(resourceGroup().id), 'sacjumpbox'))]",
+                "[concat('Microsoft.Network/networkInterfaces/','nicjumpbox')]"
+            ],
+            "location": "[variables('location')]",
+            "name": "vmjumpbox",
+            "properties": {
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": "true",
+                        "storageUri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacjumpbox'),'.blob.core.windows.net')]"
+                    }
+                },
+                "hardwareProfile": {
+                    "vmSize": "[variables('vmSize')]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces','nicjumpbox')]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "adminPassword": "[variables('adminPassword')]",
+                    "adminUsername": "[variables('adminUsername')]",
+                    "computerName": "vmjumpbox"
+                },
+                "storageProfile": {
+                    "dataDisks": [
+                        {
+                            "createOption": "Empty",
+                            "diskSizeGB": "[variables('sizeOfDiskInGB')]",
+                            "lun": 0,
+                            "name": "datadisk1",
+                            "vhd": {
+                                "uri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacjumpbox'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('dataDisk1VhdName'),'.vhd')]"
+                            }
+                        }
+                    ],
+                    "imageReference": {
+                        "offer": "[variables('imageOffer')]",
+                        "publisher": "[variables('imagePublisher')]",
+                        "sku": "[variables('OSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage",
+                        "name": "osdisk",
+                        "vhd": {
+                            "uri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacjumpbox'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),'.vhd')]"
+                        }
+                    }
+                }
+            },
+            "type": "Microsoft.Compute/virtualMachines"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "location": "[variables('location')]",
+            "name": "[concat(uniqueString(resourceGroup().id), 'sacdocker1')]",
+            "properties": {
+                "accountType": "[variables('storageAccountType')]"
+            },
+            "type": "Microsoft.Storage/storageAccounts"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/',variables('virtualNetworkName'))]"
+            ],
+            "location": "[variables('location')]",
+            "name": "nicdocker1",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            },
+            "type": "Microsoft.Network/networkInterfaces"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/',concat(uniqueString(resourceGroup().id), 'sacdocker1'))]",
+                "[concat('Microsoft.Network/networkInterfaces/','nicdocker1')]"
+            ],
+            "location": "[variables('location')]",
+            "name": "vmdocker1",
+            "properties": {
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": "true",
+                        "storageUri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacdocker1'),'.blob.core.windows.net')]"
+                    }
+                },
+                "hardwareProfile": {
+                    "vmSize": "[variables('vmSize')]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces','nicdocker1')]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "adminPassword": "[variables('adminPassword')]",
+                    "adminUsername": "[variables('adminUsername')]",
+                    "computerName": "vmdocker1"
+                },
+                "storageProfile": {
+                    "dataDisks": [
+                        {
+                            "createOption": "Empty",
+                            "diskSizeGB": "[variables('sizeOfDiskInGB')]",
+                            "lun": 0,
+                            "name": "datadisk1",
+                            "vhd": {
+                                "uri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacdocker1'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('dataDisk1VhdName'),'.vhd')]"
+                            }
+                        }
+                    ],
+                    "imageReference": {
+                        "offer": "[variables('imageOffer')]",
+                        "publisher": "[variables('imagePublisher')]",
+                        "sku": "[variables('OSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage",
+                        "name": "osdisk",
+                        "vhd": {
+                            "uri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacdocker1'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),'.vhd')]"
+                        }
+                    }
+                }
+            },
+            "type": "Microsoft.Compute/virtualMachines"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "location": "[variables('location')]",
+            "name": "[concat(uniqueString(resourceGroup().id), 'sacdocker2')]",
+            "properties": {
+                "accountType": "[variables('storageAccountType')]"
+            },
+            "type": "Microsoft.Storage/storageAccounts"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/',variables('virtualNetworkName'))]"
+            ],
+            "location": "[variables('location')]",
+            "name": "nicdocker2",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            },
+            "type": "Microsoft.Network/networkInterfaces"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/',concat(uniqueString(resourceGroup().id), 'sacdocker2'))]",
+                "[concat('Microsoft.Network/networkInterfaces/','nicdocker2')]"
+            ],
+            "location": "[variables('location')]",
+            "name": "vmdocker2",
+            "properties": {
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": "true",
+                        "storageUri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacdocker2'),'.blob.core.windows.net')]"
+                    }
+                },
+                "hardwareProfile": {
+                    "vmSize": "[variables('vmSize')]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces','nicdocker2')]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "adminPassword": "[variables('adminPassword')]",
+                    "adminUsername": "[variables('adminUsername')]",
+                    "computerName": "vmdocker2"
+                },
+                "storageProfile": {
+                    "dataDisks": [
+                        {
+                            "createOption": "Empty",
+                            "diskSizeGB": "[variables('sizeOfDiskInGB')]",
+                            "lun": 0,
+                            "name": "datadisk1",
+                            "vhd": {
+                                "uri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacdocker2'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('dataDisk1VhdName'),'.vhd')]"
+                            }
+                        }
+                    ],
+                    "imageReference": {
+                        "offer": "[variables('imageOffer')]",
+                        "publisher": "[variables('imagePublisher')]",
+                        "sku": "[variables('OSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage",
+                        "name": "osdisk",
+                        "vhd": {
+                            "uri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacdocker2'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),'.vhd')]"
+                        }
+                    }
+                }
+            },
+            "type": "Microsoft.Compute/virtualMachines"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "location": "[variables('location')]",
+            "name": "[concat(uniqueString(resourceGroup().id), 'sacdocker3')]",
+            "properties": {
+                "accountType": "[variables('storageAccountType')]"
+            },
+            "type": "Microsoft.Storage/storageAccounts"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/',variables('virtualNetworkName'))]"
+            ],
+            "location": "[variables('location')]",
+            "name": "nicdocker3",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            },
+            "type": "Microsoft.Network/networkInterfaces"
+        },
+        {
+            "apiVersion": "[variables('apiVersion')]",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/',concat(uniqueString(resourceGroup().id), 'sacdocker3'))]",
+                "[concat('Microsoft.Network/networkInterfaces/','nicdocker3')]"
+            ],
+            "location": "[variables('location')]",
+            "name": "vmdocker3",
+            "properties": {
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": "true",
+                        "storageUri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacdocker3'),'.blob.core.windows.net')]"
+                    }
+                },
+                "hardwareProfile": {
+                    "vmSize": "[variables('vmSize')]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces','nicdocker3')]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "adminPassword": "[variables('adminPassword')]",
+                    "adminUsername": "[variables('adminUsername')]",
+                    "computerName": "vmdocker3"
+                },
+                "storageProfile": {
+                    "dataDisks": [
+                        {
+                            "createOption": "Empty",
+                            "diskSizeGB": "[variables('sizeOfDiskInGB')]",
+                            "lun": 0,
+                            "name": "datadisk1",
+                            "vhd": {
+                                "uri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacdocker3'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('dataDisk1VhdName'),'.vhd')]"
+                            }
+                        }
+                    ],
+                    "imageReference": {
+                        "offer": "[variables('imageOffer')]",
+                        "publisher": "[variables('imagePublisher')]",
+                        "sku": "[variables('OSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage",
+                        "name": "osdisk",
+                        "vhd": {
+                            "uri": "[concat('http://',concat(uniqueString(resourceGroup().id), 'sacdocker3'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),'.vhd')]"
+                        }
+                    }
+                }
+            },
+            "type": "Microsoft.Compute/virtualMachines"
+        }
+    ],
+    "variables": {
+        "OSDiskName": "osdisk",
+        "OSVersion": "7.1",
+        "addressPrefix": "10.0.0.0/16",
+        "adminPassword": "[parameters('adminPassword')]",
+        "adminUsername": "[parameters('adminUsername')]",
+        "apiVersion": "2015-06-15",
+        "dataDisk1VhdName": "datadisk1",
+        "dnsLabelPrefix": "[parameters('dnsLabelPrefix')]",
+        "imageOffer": "CentOS",
+        "imagePublisher": "OpenLogic",
+        "location": "[resourceGroup().location]",
+        "networkSecurityGroupName": "MyNSG",
+        "nicName": "myVMNic",
+        "publicIPAddressName": "myPublicIP",
+        "publicIPAddressType": "Dynamic",
+        "sizeOfDiskInGB": "100",
+        "storageAccountType": "Standard_LRS",
+        "subnetName": "Subnet",
+        "subnetPrefix": "10.0.0.0/24",
+        "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
+        "virtualNetworkName": "MyVNET",
+        "vmSize": "Standard_D1",
+        "vmStorageAccountContainerName": "vhds",
+        "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]"
+    }
+}

@@ -1,0 +1,25 @@
+{% import 'azure-jinja2/macros/storage_account.json.j2' as storage_account %}
+{% import 'azure-jinja2/macros/virtual_network.json.j2' as virtual_network %}
+{% import 'azure-jinja2/macros/public_ip_address.json.j2' as public_ip_address %}
+{% import 'azure-jinja2/macros/network_interface.json.j2' as network_interface %}
+{% import 'azure-jinja2/macros/quick_virtual_machine.json.j2' as quick_virtual_machine %}
+{% import 'azure-jinja2/macros/security_rules.json.j2' as security_rules %}
+{% import 'azure-jinja2/macros/network_security_group.json.j2' as network_security_group %}
+
+"resources" : [
+    {{ virtual_network.create() }},
+    {{ public_ip_address.create() }},
+
+    {% set jumbox_security_rules %}
+    [ {{ security_rules.SSH() }}, {{ security_rules.HTTPS() }} ]
+    {% endset %}
+    {{ network_security_group.from_vars(securityRules = jumbox_security_rules) }},
+
+    {{ quick_virtual_machine.from_vars('jumpbox', withPublicIP = "true", withNSG = "true") }},
+
+    {% for name in ['docker1', 'docker2', 'docker3'] %}
+       {% set vm_name %}{{name }}{% endset %}
+       {{ quick_virtual_machine.from_vars(vm_name) }}
+       {% if not loop.last %},{% endif %}
+    {% endfor %}
+]
