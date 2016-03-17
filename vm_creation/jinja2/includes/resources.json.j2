@@ -7,8 +7,8 @@
 {% import 'azure-jinja2/macros/network_security_group.json.j2' as network_security_group %}
 
 "resources" : [
-    {{ virtual_network.create() }},
-    {{ public_ip_address.create() }},
+    {{ virtual_network.from_vars() }},
+    {{ public_ip_address.from_vars() }},
 
     {% set jumbox_security_rules %}
     [ {{ security_rules.SSH() }}, {{ security_rules.HTTPS() }} ]
