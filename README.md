@@ -27,12 +27,13 @@ Once your VMs are created, you need some configuration to access them:
 * Update the `/etc/hosts file` on your jumpbox as described above   
   * Be sure to update adminUsername, dnsLabelPrefix with the values you've used to create the VMs!
     * location is the azure region where you've created the VMs (i.e westeurope, ...)
-  * `ssh adminUsername@<dnsLabelPrefix>.<location>.cloudapp.azure.com`
+  * `ssh <adminUsername>@<dnsLabelPrefix>.<location>.cloudapp.azure.com`
   * `sudo vi /etc/hosts`
-  * Paste the few line above at then end of the file
+  * Paste the few lines above at then end of the file
 
 * You should be now able to connect to all the VM with SSH   
   `ssh <adminUsername>@<vm_name>.azure`
 
 ## Provisioning  
-* Provisioning ... to be done!
+* `cd provisioning`
+* `ansible-playbook -i azure_hosts main.yml -u <adminUsername>`
