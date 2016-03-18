@@ -1,9 +1,36 @@
 ---
-- hosts: linux_hosts
+- hosts: reverse_proxy_hosts
   become: True
   roles:
-    - { role: docker, docker_tcp: "{{ listen_tcp }}" }
-  tasks:
-    - name: Test
-      debug: msg="Hello"
+    - { role: apache2, apache_https: "True" }
 
+- hosts: ldap_hosts
+  become: True
+  roles:
+    - { role: docker }
+
+- hosts: gitlab_hosts
+  become: True
+  roles:
+    - { role: docker }
+
+- hosts: jenkins_masters_hosts
+  become: True
+  roles:
+    - { role: docker }
+    - { role: apache2, apache_https: "True" }
+
+- hosts: jenkins_slaves_hosts
+  become: True
+  roles:
+    - { role: docker, docker_tcp: true }
+
+- hosts: nexus_hosts
+  become: True
+  roles:
+    - { role: docker }
+
+- hosts: sonar_hosts
+  become: True
+  roles:
+    - { role: docker }

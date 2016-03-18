@@ -1,5 +1,20 @@
-[linux_hosts]
-jumpbox.azure listen_tcp=false
-docker1.azure listen_tcp=false
-docker2.azure listen_tcp=false
-docker3.azure listen_tcp=true
+[reverse_proxy_hosts]
+jumpbox.azure
+
+[ldap_hosts]
+jumpbox.azure
+
+[gitlab_hosts]
+docker1.azure
+
+[jenkins_masters_hosts]
+docker2.azure
+
+[jenkins_slaves_hosts]
+docker3.azure
+
+[nexus_hosts]
+docker1.azure
+
+[sonar_hosts]
+docker1.azure

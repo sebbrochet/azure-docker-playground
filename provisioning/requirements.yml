@@ -1,3 +1,7 @@
 - src: https://github.com/sebbrochet/ansible-role-docker
   version: master
   name: docker
+
+- src: https://github.com/sebbrochet/ansible-role-apache2
+  version: master
+  name: apache2
