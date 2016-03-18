@@ -2,12 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "adminPassword": {
-            "metadata": {
-                "description": "Password for the Virtual Machine."
-            },
-            "type": "securestring"
-        },
         "adminUsername": {
             "metadata": {
                 "description": "Username for the Virtual Machine."
@@ -17,6 +11,12 @@
         "dnsLabelPrefix": {
             "metadata": {
                 "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+            },
+            "type": "string"
+        },
+        "sshKeyData": {
+            "metadata": {
+                "description": "SSH RSA public key file as a string. It should be in the form ssh-rsa AAAAB3..Jol azureuser@domain.com"
             },
             "type": "string"
         }
@@ -156,9 +156,19 @@
                     ]
                 },
                 "osProfile": {
-                    "adminPassword": "[variables('adminPassword')]",
                     "adminUsername": "[variables('adminUsername')]",
-                    "computerName": "vmjumpbox"
+                    "computerName": "vmjumpbox",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": "true",
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "keyData": "[variables('sshKeyData')]",
+                                    "path": "[variables('sshKeyPath')]"
+                                }
+                            ]
+                        }
+                    }
                 },
                 "storageProfile": {
                     "dataDisks": [
@@ -247,9 +257,19 @@
                     ]
                 },
                 "osProfile": {
-                    "adminPassword": "[variables('adminPassword')]",
                     "adminUsername": "[variables('adminUsername')]",
-                    "computerName": "vmdocker1"
+                    "computerName": "vmdocker1",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": "true",
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "keyData": "[variables('sshKeyData')]",
+                                    "path": "[variables('sshKeyPath')]"
+                                }
+                            ]
+                        }
+                    }
                 },
                 "storageProfile": {
                     "dataDisks": [
@@ -338,9 +358,19 @@
                     ]
                 },
                 "osProfile": {
-                    "adminPassword": "[variables('adminPassword')]",
                     "adminUsername": "[variables('adminUsername')]",
-                    "computerName": "vmdocker2"
+                    "computerName": "vmdocker2",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": "true",
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "keyData": "[variables('sshKeyData')]",
+                                    "path": "[variables('sshKeyPath')]"
+                                }
+                            ]
+                        }
+                    }
                 },
                 "storageProfile": {
                     "dataDisks": [
@@ -429,9 +459,19 @@
                     ]
                 },
                 "osProfile": {
-                    "adminPassword": "[variables('adminPassword')]",
                     "adminUsername": "[variables('adminUsername')]",
-                    "computerName": "vmdocker3"
+                    "computerName": "vmdocker3",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": "true",
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "keyData": "[variables('sshKeyData')]",
+                                    "path": "[variables('sshKeyPath')]"
+                                }
+                            ]
+                        }
+                    }
                 },
                 "storageProfile": {
                     "dataDisks": [
@@ -466,9 +506,8 @@
     ],
     "variables": {
         "OSDiskName": "osdisk",
-        "OSVersion": "7.1",
+        "OSVersion": "7.2",
         "addressPrefix": "10.0.0.0/16",
-        "adminPassword": "[parameters('adminPassword')]",
         "adminUsername": "[parameters('adminUsername')]",
         "apiVersion": "2015-06-15",
         "dataDisk1VhdName": "datadisk1",
@@ -481,6 +520,8 @@
         "publicIPAddressName": "myPublicIP",
         "publicIPAddressType": "Dynamic",
         "sizeOfDiskInGB": "100",
+        "sshKeyData": "[parameters('sshKeyData')]",
+        "sshKeyPath": "[concat('/home/',variables('adminUsername'),'/.ssh/authorized_keys')]",
         "storageAccountType": "Standard_LRS",
         "subnetName": "Subnet",
         "subnetPrefix": "10.0.0.0/24",

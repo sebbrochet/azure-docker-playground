@@ -1,9 +1,10 @@
 "variables": {
     "adminUsername"                : "[parameters('adminUsername')]",
-    "adminPassword"                : "[parameters('adminPassword')]",
+    "sshKeyData"                   : "[parameters('sshKeyData')]",
+    "sshKeyPath"                   : "[concat('/home/',variables('adminUsername'),'/.ssh/authorized_keys')]",
     "dnsLabelPrefix"               : "[parameters('dnsLabelPrefix')]",
     "vmSize": "Standard_D1",
-    "OSVersion"                    : "7.1",
+    "OSVersion"                    : "7.2",
     "location": "[resourceGroup().location]",
     "sizeOfDiskInGB": "100",
     "dataDisk1VhdName": "datadisk1",

@@ -15,11 +15,11 @@
     {% endset %}
     {{ network_security_group.from_vars(securityRules = jumbox_security_rules) }},
 
-    {{ quick_virtual_machine.from_vars('jumpbox', withPublicIP = "true", withNSG = "true") }},
+    {{ quick_virtual_machine.from_vars('jumpbox', withPublicIP = "true", withSSHKey = "true", withNSG = "true") }},
 
     {% for name in ['docker1', 'docker2', 'docker3'] %}
-       {% set vm_name %}{{name }}{% endset %}
-       {{ quick_virtual_machine.from_vars(vm_name) }}
+       {% set vm_name %}{{ name }}{% endset %}
+       {{ quick_virtual_machine.from_vars(vm_name, withSSHKey = "true") }}
        {% if not loop.last %},{% endif %}
     {% endfor %}
 ]

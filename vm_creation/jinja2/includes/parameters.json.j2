@@ -5,11 +5,11 @@
         "description": "Username for the Virtual Machine."
       }
     },
-    "adminPassword": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Password for the Virtual Machine."
-      }
+    "sshKeyData": {
+       "type": "string",
+       "metadata": {
+          "description": "SSH RSA public key file as a string. It should be in the form ssh-rsa AAAAB3..Jol azureuser@domain.com"
+       }
     },
     "dnsLabelPrefix": {
       "type": "string",
