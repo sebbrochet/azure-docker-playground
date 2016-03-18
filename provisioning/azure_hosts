@@ -1,0 +1,5 @@
+[linux_hosts]
+jumpbox.azure
+docker1.azure
+docker2.azure
+docker3.azure

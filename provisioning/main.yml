@@ -1,0 +1,6 @@
+---
+- hosts: linux_hosts
+  tasks:
+    - name: Test
+      debug: msg="Hello"
+
