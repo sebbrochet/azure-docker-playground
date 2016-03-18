@@ -1,5 +1,5 @@
 [linux_hosts]
-jumpbox.azure
-docker1.azure
-docker2.azure
-docker3.azure
+jumpbox.azure listen_tcp=false
+docker1.azure listen_tcp=false
+docker2.azure listen_tcp=false
+docker3.azure listen_tcp=true

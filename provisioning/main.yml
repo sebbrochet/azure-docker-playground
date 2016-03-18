@@ -1,5 +1,8 @@
 ---
 - hosts: linux_hosts
+  become: True
+  roles:
+    - { role: docker, docker_tcp: "{{ listen_tcp }}" }
   tasks:
     - name: Test
       debug: msg="Hello"
