@@ -18,16 +18,18 @@ Once your VMs are created, you need some configuration to access them:
 * Create a local file called `~/.ssh/config` to configure the jumpbox as a proxy to connect to all VMs   
 * Paste the following code in it   
   ```
+  # Be sure to update adminUsername, dnsLabelPrefix with the values you've used to create the VMs!
+  # location is the azure region where you've created the VMs (i.e westeurope, ...)
   Host *.azure
   ProxyCommand ssh <adminUsername>@<dnsLabelPrefix>.<location>.cloudapp.azure.com -W %h:%p
   ```
 
 * Update the `/etc/hosts file` on your jumpbox as described above   
-  ```
-  ssh adminUsername@<dnsLabelPrefix>.<location>.cloudapp.azure.com
-  sudo vi /etc/hosts
-  # paste the few line above at then end of the file
-  ```
+  * Be sure to update adminUsername, dnsLabelPrefix with the values you've used to create the VMs!
+    * location is the azure region where you've created the VMs (i.e westeurope, ...)
+  * `ssh adminUsername@<dnsLabelPrefix>.<location>.cloudapp.azure.com`
+  * `sudo vi /etc/hosts`
+  * Paste the few line above at then end of the file
 
 * You should be now able to connect to all the VM with SSH   
   `ssh <adminUsername>@<vm_name>.azure`
