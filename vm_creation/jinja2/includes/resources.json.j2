@@ -8,7 +8,7 @@
 
 "resources" : [
     {{ virtual_network.from_vars() }},
-    {{ public_ip_address.from_vars() }},
+    {{ public_ip_address.from_vars(withDNS = "true") }},
 
     {% set jumbox_security_rules %}
     [ {{ security_rules.SSH() }}, {{ security_rules.HTTPS() }} ]
